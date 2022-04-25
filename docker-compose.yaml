@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  logstash:
+    container_name: logstash
+    hostname: logstash
+    ports:
+      - "9600:9600"
+    environment:
+      - "LS_JAVA_OPTS=-Xmx8g -Xms8g -Dls.cgroup.cpuacct.path.override=/ -Dls.cgroup.cpu.path.override=/"
+    build:
+      context: ./logstash
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 9G
+        reservations:
+          cpus: '4'
+          memory: 9G
+    volumes:
+      - ${PWD}/logstash/logstash.sh:/root/entrypoint.sh:ro
+      - ${PWD}/logstash/files/logstash.yml:/root/config/logstash.yml:ro
+      - ${PWD}/logstash/files/pipelines.yml:/root/config/pipelines.yml:ro
+      - logstash-pipelines:/root/config/pipelines:ro
+  pipelines:
+    container_name: pipelines
+    hostname: pipelines
+    build:
+      context: ./pipelines
+    volumes:
+      - ${PWD}/pipelines/entrypoint.sh:/root/entrypoint.sh:ro
+      - ${PWD}/pipelines/files/pipelines:/pipelines/input:ro
+      - logstash-pipelines:/pipelines/output:rw
+
+volumes:
+  logstash-pipelines:
